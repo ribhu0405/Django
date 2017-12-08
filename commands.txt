@@ -1,0 +1,247 @@
+Create Django Project :
+django-admin startproject website
+
+Start Django Server :
+python manage.py runserver
+
+Create App :
+python manage.py startapp music
+
+migration - hook up or connect website with all source code and database
+admin.py - admin functionality
+models.py - blueprint of database (convert each variable of a class to database column)
+tests.py - test code
+views.py - funtions takes user req and give back something, e.g. - login, logout
+app.py - name of apps
+
+
+Create Models :
+
+each class we have to inherit from models.model class.
+
+django always creates an unique id for primary key.
+
+album = models.ForeignKey(Album, on_delete = models.CASCADE) - on_delete => whenever we delete any album all songs will get deleted
+
+whatever apps we configure in settings.py, it will go to models and check the models getting mathched with db or not.
+
+python manage.py makemigrations music - create song and album class
+
+python manage.py sqlmigrate music 0001 - convert model to sql file
+
+python manage.py migrate - sync database with class 
+
+runserver -> check all installed apps in settings -> for each app it will look into model ->
+check whether all the data in code are synced with db or not -> if not it will give error - >
+we have to run migration file
+
+
+Django Database API :
+========================
+
+python manage.py shell - open django shell
+
+Album.objects.all() - get all data from album table 
+
+Writing Another View :
+========================
+
+Each URL is connected to HTTP response
+
+
+
+.save() - save data into database from shell
+
+a.pk = a.id
+
+Album.objects.all()
+
+Album.objects.filter(id =1) - filter and return object with id 1 
+
+Album.objects.filter(artist__startswith = 'Taylor') - Give Album objects start artist name with Taylor Swift
+
+Admin Interfaces :
+=========================
+
+python manage.py createsuperuser - create admin user
+
+admin.site.register(Album) -Register Album Class as Admin
+
+
+Connecting To Database :
+=========================
+
+all_albums = Album.objects.all()
+
+Templates :
+=========================
+
+Generic HTML document with some dummy data.Used for seperating html and Database
+
+template = loader.get_template('music/index.html') - template will have reference to this index.html file
+
+Whenever we pass album info in template(html) we need to pass it through dictionary
+
+render () will have HTTPResponse method inbuild ** Shortcut
+
+
+template = loader.get_template('music/index.html') - template will have reference to this file
+
+
+Raise 404 Request :
+========================
+
+raise Http404(str(album_id) + " Does Not Exist")
+
+Adding Songs to Database :
+=============================
+
+Whenever we are adding or deleting columns we need to migrate, but when we are inserting rows we don't need to migrate
+
+python manage.py shell - open database api
+
+album1.song_set.all() - display all song sets inside that album
+
+album1.song_set.create(column1 = value, column2 = value) - Create New Song, Save it to Database, Return Reference to that Song
+
+album1.song_set.count() - Count of Songs in album1
+
+Designing Details Template :
+===============================
+
+    <img src="{{ album.album_logo }}">
+
+    <h1> {{ album.album_title }} </h1>
+    <h3> {{ album.artist }} </h3>
+
+    {% for song in album.song_set.all %}
+
+        <ul>
+
+            <li> {{ song.song_title }} - {{ song.file_type }} </li>
+
+        </ul>
+
+    {% endfor %}
+
+Remove Harcoded URLs :
+==============================
+
+	<li><a href="url 'detail' album.id"> {{ album.album_title }} </a> </li>
+
+
+NameSpace and HTTP404 Shortcut :
+===================================
+
+app_name = 'music' in urls.py
+
+<li><a href="{% url 'music : detail' album.id %}"> {{ album.album_title }} </a> </li>
+
+album = get_object_or_404(Album, pk = album_id)  -- Raise 404 Not Found
+
+
+Simple Form :
+===================
+
+python .\manage.py makemigrations music - We make some changes on blueprint of the songs, so ask django to change the sql file
+ 
+python .\manage.py migrate - run the changed file and update the database
+
+csrf_token - security puropose
+
+views.py file ->
+-------------------
+
+def favorite(request, album_id):
+
+    album = get_object_or_404(Album, pk = album_id)
+
+    try :
+
+        selected_song = album.song_set.get(pk = request.POST["song"])
+
+    except (KeyError, Song.DoesNotExist):
+
+        return render(request, 'music/detail.html', {'album': album,
+                                                    'error_message' : "You Did Not Select a Valid Song",
+                                                     })
+
+    else :
+        selected_song.is_favorite = True
+        selected_song.save()
+        return render(request, 'music/detail.html', {'album': album})
+
+
+detail.html ->
+-------------------
+
+<form action="{% url 'music:favorite' album.id %}" method="post">
+
+	{% csrf_token %}
+
+	{% for song in album.song_set.all %}
+
+		<input type="radio" id = "song{{ forloop.counter }}" name = "song" value="{{ song.id }}" />
+		<label for="song{{ forloop.counter }}">
+
+			{{ song.song_title }}
+			{% if song.is_favorite %}
+			
+				<img src="http://i.imgur.com/b9b13Rd.png"/>
+			
+			{% endif %}
+
+		</label>
+		<br>
+	{% endfor %}
+
+	<input type="submit" value="Favorite">
+
+</form>
+
+
+Bootstrap and Static Files :
+==============================
+
+index.html -->
+---------------
+
+{% load staticfiles %}
+
+<link rel="stylesheet" href = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+<link rel="stylesheet" type = "text/css" href = "{% static 'music/style.css' %}" />
+
+<nav class="navbar navbar-default">
+
+    <div class="navbar-header">
+
+        <a href="{% url 'music:index' %}" class="navbar-brand">Viberr</a>
+
+    </div>
+	
+	
+
+</nav>
+
+
+style.css -->
+----------------
+
+body {
+
+    background : white url("images/background.png");
+
+}
+
+- Always Keep local css file after bootstrap css link. Otherwise it will override local css
+
+
+Create Basic Template :
+=========================
+
+- Create a base.html file and Re Use code 
+
+- {% block title %}Viberr{% endblock %} in base file 
+- {% block title %}Album Details {% endblock %} in detail.html file (override)
+
+
